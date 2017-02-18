@@ -62,40 +62,27 @@ void AttachProcess(ProcessManager *manager, process_t *newProcess)
     printf("Total Processes: %d\n", manager->count);
 }
 
-void RemoveProcess(process_t *cur, process_t *prev)
-{
-    process_t *kill = cur;
-    /* Node is head */
-    if (prev == NULL) {
-        cur = cur->next;
-    /* Node is in middle of list somewhere */
-    } else {
-        cur = cur->next;
-        prev->next = cur;
-    }
-
-    free(kill);
-}
-
-// Element is Head, list is empty
-// Element is After Head
-// Element is Head, rest of list exists.
 void UpdateProcessManager(ProcessManager *manager, unsigned dt)
 {
     process_t *cur = NULL, *prev = NULL;
     cur = manager->processList;
 
+    /* While there are still processes in list*/
     while (cur) {
+
+        /* Start the process if it's new. */
         if (cur->state == UNINITIALIZED)
             cur->onInit(cur);
 
+        /* If Process is already running, update it. */
         if (cur->state == RUNNING)
             cur->onUpdate(cur, dt);
 
+        /* If our process is dead, figure out why, call appropriate callback.*/
         if (ProcessIsDead(cur)) {
-
+            
             switch (cur->state) {
-
+                /* Process finished normally. Add any children to process Chain. */
                 case COMPLETE:
                     if(cur->onComplete)
                         cur->onComplete(cur);
@@ -104,11 +91,13 @@ void UpdateProcessManager(ProcessManager *manager, unsigned dt)
                     }
                     break;
 
+                /* Process Failed for normal reasons */
                 case FAILED:
                     if (cur->onFail)
                         cur->onFail(cur);
                     break;
 
+                /* Process was interrupted */
                 case ABORT:
                     if (cur->onAbort)
                         cur->onAbort(cur);
@@ -130,6 +119,5 @@ void UpdateProcessManager(ProcessManager *manager, unsigned dt)
             prev = cur;
             cur = cur->next;
         }
-
     }
 }
